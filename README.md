@@ -36,7 +36,7 @@ streamchat/
 
 ## Live Demo
 
-- **Frontend:** https://harmonious-hamster-d21947.netlify.app
+- **Frontend:** https://sensational-sherbet-4f3588.netlify.app
 - **Backend:** https://streamchat-n03f.onrender.com
 
 ---
