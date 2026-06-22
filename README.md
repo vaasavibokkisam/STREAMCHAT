@@ -26,7 +26,7 @@ LayerTechnologyBackendFastAPI + UvicornLLMGroq API (llama-3.3-70b-versatile)Stre
 Live Demo
 
 
-##Frontend: https://harmonious-hamster-d21947.netlify.app##
+##Frontend: https://dulcet-beijinho-b80adc.netlify.app##
 ##Backend: https://streamchat-n03f.onrender.com##
 
 
