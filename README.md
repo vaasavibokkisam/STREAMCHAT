@@ -1,4 +1,4 @@
-StreamChat
+##StreamChat##
 
 A real-time AI chat application with token-by-token streaming via Server-Sent Events (SSE).
 
@@ -26,8 +26,8 @@ LayerTechnologyBackendFastAPI + UvicornLLMGroq API (llama-3.3-70b-versatile)Stre
 Live Demo
 
 
-Frontend: https://harmonious-hamster-d21947.netlify.app
-Backend: https://streamchat-n03f.onrender.com
+##Frontend: https://harmonious-hamster-d21947.netlify.app##
+##Backend: https://streamchat-n03f.onrender.com##
 
 
 
