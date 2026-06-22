@@ -37,7 +37,6 @@
       padding: 0;
     }
 
-    /* ── Header ── */
     header {
       width: 100%;
       max-width: 760px;
@@ -85,7 +84,6 @@
 
     .token-count { color: var(--accent); font-weight: 500; }
 
-    /* ── Messages ── */
     #messages {
       flex: 1;
       width: 100%;
@@ -142,10 +140,7 @@
       border-radius: 14px 14px 14px 4px;
     }
 
-    /* typing indicator */
-    .typing-dots {
-      display: flex; gap: 5px; padding: 4px 0;
-    }
+    .typing-dots { display: flex; gap: 5px; padding: 4px 0; }
     .typing-dots span {
       width: 6px; height: 6px;
       border-radius: 50%;
@@ -170,7 +165,6 @@
       max-width: 88%;
     }
 
-    /* cursor blink during stream */
     .streaming::after {
       content: '▍';
       display: inline-block;
@@ -180,7 +174,6 @@
     }
     @keyframes blink { 50% { opacity: 0; } }
 
-    /* ── Input area ── */
     .input-area {
       width: 100%;
       max-width: 760px;
@@ -231,7 +224,6 @@
     #sendBtn:hover { background: #9080ff; }
     #sendBtn:active { transform: scale(0.94); }
     #sendBtn:disabled { background: var(--surface-2); cursor: not-allowed; }
-
     #sendBtn svg { width: 16px; height: 16px; fill: white; }
 
     .hint {
@@ -241,7 +233,6 @@
       text-align: center;
     }
 
-    /* ── Empty state ── */
     .empty-state {
       flex: 1;
       display: flex;
@@ -257,7 +248,6 @@
     .empty-state h2 { font-size: 1.4rem; color: var(--text); font-weight: 600; }
     .empty-state p  { font-size: 0.9rem; max-width: 340px; line-height: 1.6; }
 
-    /* scrollbar */
     #messages::-webkit-scrollbar { width: 4px; }
     #messages::-webkit-scrollbar-track { background: transparent; }
     #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -294,23 +284,22 @@
 
 <script>
   const BACKEND = "https://streamchat-n03f.onrender.com";
+
   const messagesEl = document.getElementById("messages");
   const inputEl    = document.getElementById("userInput");
   const sendBtn    = document.getElementById("sendBtn");
   const tokenEl    = document.getElementById("tokenCount");
   const emptyState = document.getElementById("emptyState");
 
-  let history = [];        // [{role, content}]
+  let history = [];
   let totalTokens = 0;
   let isStreaming = false;
 
-  // ── Auto-resize textarea ──
   inputEl.addEventListener("input", () => {
     inputEl.style.height = "auto";
     inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + "px";
   });
 
-  // ── Enter to send ──
   inputEl.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -320,21 +309,16 @@
 
   sendBtn.addEventListener("click", sendMessage);
 
-  // ── Helpers ──
   function appendMessage(role, content = "") {
     emptyState?.remove();
-
     const wrap = document.createElement("div");
     wrap.className = `message ${role}`;
-
     const label = document.createElement("div");
     label.className = "role-label";
     label.textContent = role === "user" ? "You" : "Assistant";
-
     const bubble = document.createElement("div");
     bubble.className = "bubble";
     bubble.textContent = content;
-
     wrap.appendChild(label);
     wrap.appendChild(bubble);
     messagesEl.appendChild(wrap);
@@ -347,18 +331,15 @@
     const wrap = document.createElement("div");
     wrap.className = "message ai";
     wrap.id = "typingIndicator";
-
     const label = document.createElement("div");
     label.className = "role-label";
     label.textContent = "Assistant";
-
     const bubble = document.createElement("div");
     bubble.className = "bubble";
     const dots = document.createElement("div");
     dots.className = "typing-dots";
     dots.innerHTML = "<span></span><span></span><span></span>";
     bubble.appendChild(dots);
-
     wrap.appendChild(label);
     wrap.appendChild(bubble);
     messagesEl.appendChild(wrap);
@@ -391,7 +372,6 @@
     inputEl.disabled = val;
   }
 
-  // ── Main send logic ──
   async function sendMessage() {
     const message = inputEl.value.trim();
     if (!message || isStreaming) return;
@@ -401,7 +381,6 @@
     setStreaming(true);
 
     appendMessage("user", message);
-
     const typingEl = showTyping();
 
     try {
@@ -419,7 +398,6 @@
         return;
       }
 
-      // Replace typing indicator with real bubble
       typingEl.remove();
       const aiBubble = appendMessage("ai", "");
       aiBubble.classList.add("streaming");
@@ -428,6 +406,7 @@
       const decoder = new TextDecoder();
       let buffer = "";
       let fullText = "";
+      let isTokenUsageLine = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -435,26 +414,35 @@
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        buffer = lines.pop(); // keep incomplete line
+        buffer = lines.pop();
 
         for (const line of lines) {
+          // Track token_usage event
+          if (line.startsWith("event: token_usage")) {
+            isTokenUsageLine = true;
+            continue;
+          }
           if (line.startsWith("event: done")) continue;
-
-          if (line.startsWith("event: token_usage")) continue;
 
           if (line.startsWith("data: ")) {
             const token = line.slice(6);
 
-            // Check for token usage line (sent as data after token_usage event)
-            const num = parseInt(token, 10);
-            if (!isNaN(num) && token.trim() === String(num)) {
-              totalTokens += num;
-              tokenEl.textContent = totalTokens.toLocaleString();
+            // Skip [DONE]
+            if (token === "[DONE]") continue;
+
+            // If previous event was token_usage, this data is the count
+            if (isTokenUsageLine) {
+              const count = parseInt(token, 10);
+              if (!isNaN(count)) {
+                totalTokens += count;
+                tokenEl.textContent = totalTokens.toLocaleString();
+              }
+              isTokenUsageLine = false;
               continue;
             }
 
-            if (token === "[DONE]") continue;
-
+            // ✅ FIX 1: Append token to DOM immediately (progressive rendering)
+            // ✅ FIX 2: No number filtering — all tokens including digits render correctly
             fullText += token;
             aiBubble.textContent = fullText;
             scrollToBottom();
@@ -463,8 +451,6 @@
       }
 
       aiBubble.classList.remove("streaming");
-
-      // Update history for multi-turn
       history.push({ role: "user", content: message });
       history.push({ role: "assistant", content: fullText });
 
